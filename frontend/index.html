@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpendWise | Premium Glassmorphic Expense Tracker</title>
+  <meta name="description" content="Manage your personal finances, track daily spending, analyze categories, and view monthly reports in a sleek, glassmorphic dashboard.">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- ─────────────────────────────────────────────────
+     AUTHENTICATION SCREEN (SPA View 1)
+     ───────────────────────────────────────────────── -->
+  <div id="auth-view" class="view-container active">
+    <div class="auth-wrapper">
+      <div class="glass-card auth-card">
+        
+        <div class="auth-header">
+          <div class="auth-logo">
+            <i class="fa-solid fa-wallet"></i> SpendWise
+          </div>
+          <p class="auth-subtitle">Track your wealth in style</p>
+        </div>
+
+        <div class="auth-tabs">
+          <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+          <div id="tab-register" class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="auth-alert" class="alert alert-danger">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="auth-alert-text">Error message</span>
+        </div>
+
+        <!-- Login Form -->
+        <div id="form-login-container" class="auth-form-container active">
+          <form id="form-login" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label class="form-label" for="login-email">Email Address</label>
+              <input type="email" id="login-email" class="form-control" placeholder="name@example.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="login-password">Password</label>
+              <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fa-solid fa-right-to-bracket"></i> Login to Dashboard
+            </button>
+          </form>
+        </div>
+
+        <!-- Register Form -->
+        <div id="form-register-container" class="auth-form-container">
+          <form id="form-register" onsubmit="handleRegister(event)">
+            <div class="form-group">
+              <label class="form-label" for="register-username">Username</label>
+              <input type="text" id="register-username" class="form-control" placeholder="john_doe" required autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="register-email">Email Address</label>
+              <input type="email" id="register-email" class="form-control" placeholder="name@example.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="register-password">Password</label>
+              <input type="password" id="register-password" class="form-control" placeholder="Min. 8 characters" required autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fa-solid fa-user-plus"></i> Create Account
+            </button>
+          </form>
+        </div>
+
+        <div class="auth-footer">
+          <p>Powered by FastAPI & SQLAlchemy</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────
+     MAIN DASHBOARD SCREEN (SPA View 2)
+     ───────────────────────────────────────────────── -->
+  <div id="dashboard-view" class="view-container">
+    <div class="container">
+      
+      <!-- Top Navigation -->
+      <nav class="nav-bar">
+        <div class="brand">
+          <i class="fa-solid fa-wallet"></i> SpendWise
+        </div>
+        <div class="nav-user">
+          <div class="user-badge">
+            <div id="user-avatar" class="user-avatar">U</div>
+            <span id="user-name">Loading...</span>
+          </div>
+          <button class="btn btn-secondary btn-icon-only" onclick="handleLogout()" title="Logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Alert banners -->
+      <div id="dashboard-alert" class="alert alert-success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="dashboard-alert-text">Operation successful</span>
+      </div>
+
+      <!-- Aggregate Metrics Section -->
+      <section class="metrics-grid">
+        <div class="glass-card metric-card">
+          <div class="metric-icon-box">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Total Spending</div>
+            <div id="metric-total-spent" class="metric-value">$0.00</div>
+          </div>
+        </div>
+
+        <div class="glass-card metric-card">
+          <div class="metric-icon-box">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Transactions</div>
+            <div id="metric-total-count" class="metric-value">0</div>
+          </div>
+        </div>
+
+        <div class="glass-card metric-card">
+          <div class="metric-icon-box">
+            <i class="fa-solid fa-chart-pie"></i>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Top Category</div>
+            <div id="metric-top-category" class="metric-value">-</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts Section -->
+      <section class="charts-grid">
+        <div class="glass-card chart-card">
+          <h3 class="chart-title">
+            <i class="fa-solid fa-chart-bar"></i> Monthly Spending Overview
+          </h3>
+          <div class="chart-container">
+            <canvas id="monthlyChart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card chart-card">
+          <h3 class="chart-title">
+            <i class="fa-solid fa-circle-dot"></i> Spending by Category
+          </h3>
+          <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Expense Manager Section -->
+      <section class="glass-card">
+        
+        <!-- Controls & Filters -->
+        <div class="actions-row">
+          <div class="search-filter-bar">
+            <div class="search-input-wrapper">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="filter-search" class="form-control" placeholder="Search title or description..." oninput="handleSearchFilter()">
+            </div>
+            
+            <button class="btn btn-secondary filter-toggle-btn" onclick="toggleFiltersPanel()">
+              <i class="fa-solid fa-sliders"></i> Filters
+            </button>
+          </div>
+          
+          <button class="btn btn-primary" onclick="openModal('add-expense-modal')">
+            <i class="fa-solid fa-plus"></i> Add Expense
+          </button>
+        </div>
+
+        <!-- Advanced Filter Drawer -->
+        <div id="filters-panel" class="filters-panel">
+          <div class="form-group">
+            <label class="form-label" for="filter-category">Category</label>
+            <select id="filter-category" class="form-control" onchange="applyFilters()">
+              <option value="">All Categories</option>
+              <option value="Food">Food</option>
+              <option value="Travel">Travel</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Education">Education</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-min-amount">Min Amount</label>
+            <input type="number" id="filter-min-amount" class="form-control" placeholder="e.g. 10" min="0" oninput="applyFilters()">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-max-amount">Max Amount</label>
+            <input type="number" id="filter-max-amount" class="form-control" placeholder="e.g. 500" min="0" oninput="applyFilters()">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-month">Month</label>
+            <select id="filter-month" class="form-control" onchange="applyFilters()">
+              <option value="">All Months</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-year">Year</label>
+            <input type="number" id="filter-year" class="form-control" placeholder="2026" oninput="applyFilters()">
+          </div>
+        </div>
+
+        <!-- Expenses List Table -->
+        <div class="table-responsive">
+          <table class="expense-table" id="expense-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th style="width: 100px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="expense-list-body">
+              <!-- Dynamically populated or empty state -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="expense-empty-state" class="empty-state" style="display: none;">
+          <i class="fa-solid fa-receipt"></i>
+          <h3>No expenses found</h3>
+          <p>Start recording your spending by clicking the "Add Expense" button above.</p>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container">
+          <div id="pagination-info" class="pagination-info">Showing page 1 of 1 (0 total items)</div>
+          <div class="pagination-controls">
+            <button class="btn btn-secondary btn-icon-only" id="btn-prev-page" onclick="changePage(-1)" title="Previous Page">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button class="btn btn-secondary btn-icon-only" id="btn-next-page" onclick="changePage(1)" title="Next Page">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────
+     ADD EXPENSE MODAL
+     ───────────────────────────────────────────────── -->
+  <div id="add-expense-modal" class="modal-overlay" onclick="handleOutsideModalClick(event, 'add-expense-modal')">
+    <div class="glass-card modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-plus-circle"></i> Add New Expense</h3>
+        <button class="modal-close" onclick="closeModal('add-expense-modal')">&times;</button>
+      </div>
+      
+      <form id="form-add-expense" onsubmit="handleAddExpense(event)">
+        <div class="form-group">
+          <label class="form-label" for="add-title">Title</label>
+          <input type="text" id="add-title" class="form-control" placeholder="e.g. Weekly Groceries" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="add-amount">Amount ($)</label>
+          <input type="number" id="add-amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="add-category">Category</label>
+          <select id="add-category" class="form-control" required>
+            <option value="" disabled selected>Select category</option>
+            <option value="Food">Food</option>
+            <option value="Travel">Travel</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Education">Education</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="add-date">Date</label>
+          <input type="date" id="add-date" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="add-description">Description (Optional)</label>
+          <textarea id="add-description" class="form-control" rows="3" placeholder="Additional details..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('add-expense-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────
+     EDIT EXPENSE MODAL
+     ───────────────────────────────────────────────── -->
+  <div id="edit-expense-modal" class="modal-overlay" onclick="handleOutsideModalClick(event, 'edit-expense-modal')">
+    <div class="glass-card modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-edit"></i> Edit Expense</h3>
+        <button class="modal-close" onclick="closeModal('edit-expense-modal')">&times;</button>
+      </div>
+      
+      <form id="form-edit-expense" onsubmit="handleEditExpense(event)">
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label class="form-label" for="edit-title">Title</label>
+          <input type="text" id="edit-title" class="form-control" placeholder="e.g. Weekly Groceries" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="edit-amount">Amount ($)</label>
+          <input type="number" id="edit-amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-category">Category</label>
+          <select id="edit-category" class="form-control" required>
+            <option value="Food">Food</option>
+            <option value="Travel">Travel</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Education">Education</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-date">Date</label>
+          <input type="date" id="edit-date" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-description">Description (Optional)</label>
+          <textarea id="edit-description" class="form-control" rows="3" placeholder="Additional details..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('edit-expense-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────
+     DELETE CONFIRM MODAL
+     ───────────────────────────────────────────────── -->
+  <div id="delete-expense-modal" class="modal-overlay" onclick="handleOutsideModalClick(event, 'delete-expense-modal')">
+    <div class="glass-card modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-circle-exclamation" style="color: var(--accent-red);"></i> Delete Expense?</h3>
+        <button class="modal-close" onclick="closeModal('delete-expense-modal')">&times;</button>
+      </div>
+      
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        Are you sure you want to permanently delete this expense? This action cannot be undone.
+      </p>
+
+      <input type="hidden" id="delete-id">
+      <div class="modal-footer" style="border-top: none; margin-top: 0; padding-top: 0;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('delete-expense-modal')">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="confirmDeleteExpense()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
